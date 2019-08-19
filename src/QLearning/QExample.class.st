@@ -231,6 +231,70 @@ QExample >> example03 [
 ]
 
 { #category : #examples }
+QExample >> example04 [
+	<script: 'self new example04 inspect'>
+	
+	| grid startState nEpisodes maxEpisodeSteps minAlpha alphas gamma state totalReward alpha action result nextState reward done size nbIter nbMaxIter res |
+	size := 30.
+	res := OrderedCollection  new.
+	grid := (1 to: size) collect: [ :x | 
+					(1 to: size) collect: [ :y | self empty ]
+		 ].
+	(grid at: 1) at: 1 put: self iceCream.
+	(grid at: size) at: size put: self car.
+	r := Random seed: 42.
+	1 to: size do: [ :i | (grid at: (r nextInt: size)) at: (r nextInt: size) put: self zombie ].
+	
+	startState := QState new grid: grid; carPos: size @ size.
+
+	nEpisodes := 2000.
+	maxEpisodeSteps := 1800.
+	minAlpha := 0.0.7.
+	alphas := (minAlpha to: 1.0 by: (1.0 - minAlpha) / (nEpisodes - 1)) asArray reverse.
+	gamma := 0.95.
+	
+	1 to: nEpisodes do: [ :e |
+		state := startState.
+		totalReward := 0.
+		alpha := alphas at: e.
+		done := false.
+		maxEpisodeSteps timesRepeat: [
+			[ done ] whileFalse: [ 
+				action := self chooseAction: state.
+				result := self act: state action: action.
+				nextState := result first.
+				reward := result second.
+				done := result third.
+				totalReward := totalReward + reward.
+				(self q: state) at: action put: (((self q: state) at: action) + (alpha * (reward + (gamma * (self q: nextState) max) - (self q: state action: action)))).
+				state := nextState ].
+		].
+		Transcript show: 'Episode ', e asString, ' reward: ', totalReward asString; cr.
+		res add: totalReward.
+	].
+	"------"
+	"doing"
+	done := false.
+	state := startState.
+	state logCr.
+	nbIter := 0.
+	nbMaxIter := 100.
+	[ done ] whileFalse: [
+		| sa ac rr | 
+		sa := self q: state.
+		"sa logCr."
+		ac := sa indexOf: sa max.
+		rr := self act: state action: ac.
+		state := rr first.
+		state logCr.
+		done := rr third.
+		nbIter == nbMaxIter ifTrue: [ done := true ].
+		nbIter := nbIter + 1.
+	].
+	^res
+]
+
+{ #category : #examples }
 QExample >> iceCream [
 	^ $i
 ]
