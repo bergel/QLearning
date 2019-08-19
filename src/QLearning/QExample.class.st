@@ -177,6 +177,60 @@ QExample >> example02 [
 ]
 
 { #category : #examples }
+QExample >> example03 [
+	<script: 'self new example03'>
+	
+	| grid startState nEpisodes maxEpisodeSteps minAlpha alphas gamma state totalReward alpha action result nextState reward done |
+	grid := { { self iceCream . self empty . self zombie . self empty } . 
+				{ self zombie . self empty . self empty . self empty } .
+				{ self empty . self zombie . self empty . self empty } .
+				{ self empty . self empty . self zombie . self car } }.
+	startState := QState new grid: grid; carPos: 4 @ 4.
+
+	nEpisodes := 20.
+	maxEpisodeSteps := 100.
+	minAlpha := 0.02.
+	alphas := (minAlpha to: 1.0 by: (1.0 - minAlpha) / (nEpisodes - 1)) asArray reverse.
+	gamma := 1.0.
+	
+	1 to: nEpisodes do: [ :e |
+		state := startState.
+		totalReward := 0.
+		alpha := alphas at: e.
+		done := false.
+		maxEpisodeSteps timesRepeat: [
+			[ done ] whileFalse: [ 
+				action := self chooseAction: state.
+				result := self act: state action: action.
+				nextState := result first.
+				reward := result second.
+				done := result third.
+				totalReward := totalReward + reward.
+				(self q: state) at: action put: (((self q: state) at: action) + (alpha * (reward + (gamma * (self q: nextState) max) - (self q: state action: action)))).
+				state := nextState ].
+		].
+		Transcript show: 'Episode ', e asString, ' reward: ', totalReward asString; cr.
+	].
+	"------"
+	"doing"
+	done := false.
+	state := startState.
+	state logCr.
+	[ done ] whileFalse: [
+		| sa ac rr | 
+		sa := self q: state.
+		"sa logCr."
+		ac := sa indexOf: sa max.
+		rr := self act: state action: ac.
+		state := rr first.
+		state logCr.
+		done := rr third.
+		
+	].
+
+]
+
+{ #category : #examples }
 QExample >> iceCream [
 	^ $i
 ]
